@@ -17,18 +17,20 @@ interface ICell {
   stone: IStoneStatus;
 }
 
+const BOARD_SIZE = 8;
+
 /** アクションの種類 */
 class Type {
   static readonly ADD = Symbol('ADD');
   static readonly CHANGE_TURN = Symbol('CHANGE_TURN');
 }
 
-const initSquares = () => {
+const initBoard = () => {
   const cells = [];
 
-  for (let i = 0; i < 8; i += 1) {
-    const row = [];
-    for (let j = 0; j < 8; j += 1) {
+  for (let i = 0; i < BOARD_SIZE; i += 1) {
+    const row = [] as IStoneStatus[];
+    for (let j = 0; j < BOARD_SIZE; j += 1) {
       if ((i === 3 && j === 3) || (i === 4 && j === 4)) {
         row.push('black');
       } else if ((i === 3 && j === 4) || (i === 4 && j === 3)) {
@@ -46,7 +48,7 @@ const initSquares = () => {
 
 /** 初期状態 */
 const createInitialState = () => ({
-  cells: initSquares(),
+  cells: initBoard(),
   blackIsNext: true,
 });
 

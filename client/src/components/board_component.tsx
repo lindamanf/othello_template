@@ -10,129 +10,30 @@ const style = require('./board_component.scss');
 const distributeState = ({ Board }: Reducers) => ({ Board });
 type IProps = ReturnType<typeof distributeState>;
 
-const getReverseStones = (x: number, y: number, turnStone: IStoneStatus, cells: IStoneStatus[][]) => {
-  const targetStones = [];
+const getReverseStones = (x: number, y: number, dx: number, dy: number, turnStone: IStoneStatus, cells: IStoneStatus[][]) => {
   const reversedStone = (turnStone === 'black') ? 'white' : 'black';
+  const targetStones = [];
+  let tx = x;
+  let ty = y;
 
-  // 右側チェック
-  for (let i = 0; i < 7 - x; i += 1) {
-    if (i === 0) {
-      if (cells[y][x + 1] !== reversedStone) break;
+  while (tx >= 0 && tx < 8 && ty >= 0 && ty < 8) {
+    if (!cells[ty + dy]) {
+      return [];
     }
 
-    if (cells[y][x + i + 1] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x + j + 1, y]);
-      }
-      break;
-    }
-  }
-
-  // 左側チェック
-  for (let i = 0; i < x; i += 1) {
-    if (i === 0) {
-      if (cells[y][x - 1] !== reversedStone) break;
-    }
-
-    if (cells[y][x - i - 1] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x - j - 1, y]);
-      }
-      break;
-    }
-  }
-
-  // 下側のチェック
-  for (let i = 0; i < 7 - y; i += 1) {
-    if (i === 0) {
-      if (cells[y + 1][x] !== reversedStone) break;
-    }
-
-    if (cells[y + i + 1][x] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x, y + j + 1]);
-      }
-      break;
-    }
-  }
-
-  // 上側のチェック
-  for (let i = 0; i < y; i += 1) {
-    if (i === 0) {
-      if (cells[y - 1][x] !== reversedStone) break;
-    }
-
-    if (cells[y - i - 1][x] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x, y - j - 1]);
-      }
-      break;
-    }
-  }
-
-  // 右上方向のチェック
-  let d = (7 - x < y) ? 8 - x : y;
-  for (let i = 0; i < d; i += 1) {
-    if (i === 0) {
-      if (cells[y - 1][x + 1] !== reversedStone) break;
-    }
-
-    if (cells[y - i - 1][x + i + 1] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x + j + 1, y - j - 1]);
-      }
-      break;
-    }
-  }
-
-  // 左上方向のチェック
-  d = (x < y) ? x : y;
-  for (let i = 0; i < d; i += 1) {
-    if (i === 0) {
-      if (cells[y - 1][x - 1] !== reversedStone) break;
-    }
-
-    if (cells[y - i - 1][x - i - 1] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x - j - 1, y - j - 1]);
-      }
-      break;
-    }
-  }
-
-  // 右下方向のチェック
-  d = (7 - x < 7 - y) ? 7 - x : 7 - y;
-  for (let i = 0; i < d; i += 1) {
-    if (i === 0) {
-      if (cells[y + 1][x + 1] !== reversedStone) break;
-    }
-
-    if (cells[y + i + 1][x + i + 1] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x + j + 1, y + j + 1]);
-      }
-      break;
-    }
-  }
-
-  // 左下方向のチェック
-  d = (x < 7 - y) ? x : 7 - y;
-  for (let i = 0; i < d; i += 1) {
-    if (i === 0) {
-      if (cells[y + 1][x - 1] !== reversedStone) break;
-    }
-
-    if (cells[y + i + 1][x - i - 1] === turnStone) {
-      for (let j = 0; j < i; j += 1) {
-        targetStones.push([x - j - 1, y + j + 1]);
-      }
-      break;
+    if (cells[ty + dy][tx + dx] === reversedStone) {
+      tx += dx;
+      ty += dy;
+      targetStones.push([tx, ty]);
+    } else if (cells[ty + dy][tx + dx] === turnStone) {
+      return targetStones;
+    } else {
+      return [];
     }
   }
 
   return targetStones;
 };
-
 
 /** 盤面全体を管理するコンテナコンポーネント */
 const BoardComponent = (props: IProps) => {
@@ -143,7 +44,14 @@ const BoardComponent = (props: IProps) => {
   const handleClick = React.useCallback((x: number, y: number) => {
     if (cells[y][x]) return;
 
-    const targetStones = getReverseStones(x, y, turn, cells as IStoneStatus[][]);
+    const targetStones = getReverseStones(x, y, 1, 0, turn, cells)
+      .concat(getReverseStones(x, y, 1, -1, turn, cells))
+      .concat(getReverseStones(x, y, 0, -1, turn, cells))
+      .concat(getReverseStones(x, y, -1, -1, turn, cells))
+      .concat(getReverseStones(x, y, -1, 0, turn, cells))
+      .concat(getReverseStones(x, y, -1, 1, turn, cells))
+      .concat(getReverseStones(x, y, 0, 1, turn, cells))
+      .concat(getReverseStones(x, y, 1, 1, turn, cells));
 
     if (targetStones.length > 0) {
       BoardAction.add(x, y, turn);
@@ -159,7 +67,18 @@ const BoardComponent = (props: IProps) => {
         {turn}
       </div>
       <div className={style.board}>
-        {cells.map((row, i) => row.map((stone, j) => <CellComponent stone={stone as IStoneStatus} x={j} y={i} onClick={handleClick} blackIsNext={blackIsNext} />))}
+        {cells.map((row, i) => row.map((stone, j) => (
+          <CellComponent
+            // 他に適切なキーがないため
+            // eslint-disable-next-line react/no-array-index-key
+            key={`${j}_${i}`}
+            stone={stone as IStoneStatus}
+            x={j}
+            y={i}
+            onClick={handleClick}
+            blackIsNext={blackIsNext}
+          />
+        )))}
       </div>
     </div>
   );
