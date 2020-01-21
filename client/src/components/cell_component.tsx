@@ -1,5 +1,6 @@
 import React from 'react';
 import { IStoneStatus } from 'src/interfaces';
+import { BoardAction } from 'src/reducers/board_action';
 
 const style = require('./cell_component.scss');
 
@@ -7,8 +8,6 @@ interface IProps {
   stone: IStoneStatus;
   x: number;
   y: number;
-  blackIsNext: boolean;
-  onClick: (x: number, y: number) => unknown;
 }
 
 /** オセロの石1つに対応するコンポーネントです */
@@ -17,29 +16,19 @@ export const CellComponent = (props: IProps) => {
     stone,
     x,
     y,
-    onClick,
-    blackIsNext,
   } = props;
 
-  const handleClick = React.useCallback(() => { onClick(x, y); }, [blackIsNext]);
-  const renderStone = () => {
-    if (stone === 'black') {
-      return <span className={style.cell_black} />;
-    } if (stone === 'white') {
-      return <span className={style.cell_white} />;
-    }
-    return <span />;
-  };
+  const onClick = React.useCallback(() => {
+    BoardAction.add(x, y);
+  }, [stone]);
 
   return (
-    <div className={style.cell} onClick={handleClick}>
-      [
+    <div className={style.cell} onClick={onClick}>
       {y}
       ,
       {x}
-      ]
       <br />
-      {renderStone()}
+      <span className={style[`cell_${stone}`]} />
     </div>
   );
 };

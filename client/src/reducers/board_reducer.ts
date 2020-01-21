@@ -3,18 +3,10 @@ import {
   IStoneStatus,
 } from 'src/interfaces';
 
-
 /** 座標 */
-// interface ICoordinate {
-//   x: number;
-//   y: number;
-// }
-
-/** セル */
 interface ICell {
   x: number;
   y: number;
-  stone: IStoneStatus;
 }
 
 const BOARD_SIZE = 8;
@@ -62,6 +54,47 @@ interface IActions {
 
 type IAction = IActionsConverter<IActions>;
 
+const getDirReverseStones = (x: number, y: number, dx: number, dy: number, isBlackTurn: boolean, cells: IStoneStatus[][]) => {
+  const turnStone: IStoneStatus = (isBlackTurn) ? 'black' : 'white';
+  const reversedStone: IStoneStatus = (isBlackTurn) ? 'white' : 'black';
+  const targetStones = [];
+  let tx = x;
+  let ty = y;
+
+  while (tx >= 0 && tx < 8 && ty >= 0 && ty < 8) {
+    if (!cells[ty + dy]) {
+      return [];
+    }
+
+    if (cells[ty + dy][tx + dx] === reversedStone) {
+      tx += dx;
+      ty += dy;
+      targetStones.push([tx, ty]);
+    } else if (cells[ty + dy][tx + dx] === turnStone) {
+      return targetStones;
+    } else {
+      return [];
+    }
+  }
+
+  return targetStones;
+};
+
+const getAllReverseStones = (x: number, y: number, cells: IStoneStatus[][], isBlackTurn: boolean) => {
+  if (cells[y][x]) {
+    return [];
+  }
+
+  return getDirReverseStones(x, y, 1, 0, isBlackTurn, cells)
+    .concat(getDirReverseStones(x, y, 1, -1, isBlackTurn, cells))
+    .concat(getDirReverseStones(x, y, 0, -1, isBlackTurn, cells))
+    .concat(getDirReverseStones(x, y, -1, -1, isBlackTurn, cells))
+    .concat(getDirReverseStones(x, y, -1, 0, isBlackTurn, cells))
+    .concat(getDirReverseStones(x, y, -1, 1, isBlackTurn, cells))
+    .concat(getDirReverseStones(x, y, 0, 1, isBlackTurn, cells))
+    .concat(getDirReverseStones(x, y, 1, 1, isBlackTurn, cells));
+};
+
 /**
    * アクションの種類ごとの状態変化を記載してください。
    * stateを更新する場合、必ず非破壊的してください。
@@ -69,12 +102,20 @@ type IAction = IActionsConverter<IActions>;
 const reducer = (state = createInitialState(), action: IAction) => {
   switch (action.type) {
     case Type.ADD: {
-      const { x, y, stone } = action;
+      const { x, y } = action;
+      const reverseStones = getAllReverseStones(x, y, state.cells, state.blackIsNext);
       const c = state.cells.concat();
-      c[y][x] = stone;
+      const stone: IStoneStatus = (state.blackIsNext) ? 'black' : 'white';
+      reverseStones.forEach(m => { c[m[1]][m[0]] = stone; });
+      let nextTurn = state.blackIsNext;
+      if (reverseStones.length > 0) {
+        c[y][x] = stone;
+        nextTurn = !state.blackIsNext;
+      }
       return {
         ...state,
         cells: c,
+        blackIsNext: nextTurn,
       };
     }
     case Type.CHANGE_TURN: {
